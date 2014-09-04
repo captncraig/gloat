@@ -24,7 +24,9 @@ type LoadTest struct {
 	Duration          time.Duration
 	F                 TestFunction
 	totalTime         time.Duration
+	windowTime        time.Duration
 	totalOps          int64
+	windowOps         int64
 }
 
 func NewLoadTest() *LoadTest {
@@ -50,23 +52,37 @@ func (t *LoadTest) Run() {
 	}
 	go tick(doWork, t.RequestsPerSecond, stop)
 	go harvestResults(results, t)
-	fmt.Println("main started")
 	time.Sleep(t.Duration)
-	fmt.Println("main stopping")
 	close(stop)
 	waitGroup.Wait()
-	fmt.Println("main cooled")
+	fmt.Println("Done")
 	close(results)
 	fmt.Println(t.totalOps)
 	fmt.Println(time.Duration(int64(t.totalTime) / t.totalOps))
 }
+
 func harvestResults(r <-chan SingleResult, t *LoadTest) {
+	tick := time.NewTicker(1 * time.Second)
 	for {
-		s := <-r
-		t.totalOps++
-		t.totalTime += s.duration
+		select {
+		case s := <-r:
+			t.totalOps++
+			t.totalTime += s.duration
+			t.windowOps++
+			t.windowTime += s.duration
+		case <-tick.C:
+			fmt.Println(t.windowOps)
+			if t.windowOps != 0 {
+				fmt.Println(time.Duration(int64(t.windowTime) / t.windowOps))
+			} else {
+				fmt.Println(0)
+			}
+			t.windowOps = 0
+			t.windowTime = 0
+		}
 	}
 }
+
 func tick(output chan<- bool, maxPerSecond int, stop <-chan struct{}) {
 	if maxPerSecond <= 0 {
 		for {
