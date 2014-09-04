@@ -7,7 +7,7 @@ import (
 
 func main() {
 	test := gloat.NewLoadTest()
-	test.RequestsPerSecond = 0
+	test.RequestsPerSecond = 5000
 	test.Workers = 10
 	test.Duration = 20 * time.Second
 	test.F = gloat.HttpGet("http://yahoo.com")

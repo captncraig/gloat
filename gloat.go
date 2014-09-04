@@ -83,13 +83,13 @@ func tick(output chan<- bool, maxPerSecond int, stop <-chan struct{}) {
 	fmt.Println(interval)
 	ticker := time.NewTicker(interval)
 	for {
-		<-ticker.C
+
 		select {
 		case <-stop:
 			ticker.Stop()
 			close(output)
 			return
-		default:
+		case <-ticker.C:
 			output <- true
 		}
 	}
